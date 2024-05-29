@@ -17,10 +17,14 @@ struct ContentView: View {
     @State private var errorMessage = ""
     @State private var showingError = false
     
+    @State private var score = 0
     
     var body: some View {
-        NavigationStack{
+        NavigationStack {
             List{
+                Section("Score: \(score)") {
+                   EmptyView()
+                }
                 Section {
                     TextField("Enter your word", text: $newWord)
                         .textInputAutocapitalization(.never)
@@ -45,6 +49,11 @@ struct ContentView: View {
             .alert(errorTitle, isPresented: $showingError) { } message: {
                 Text(errorMessage)
             }
+            .toolbar(content: {
+                Button("New game") {
+                    startGame()
+                }
+            })
         }
         
 
@@ -52,9 +61,7 @@ struct ContentView: View {
     private func addNewWord() {
         let answr = newWord.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
         guard  answr.count > 0 else { return }
-        withAnimation {
-            usedWords.insert(answr, at: 0)
-        }
+        
         guard isOriginal( answr) else {
             wordError(title: "Word used already", message: "Be more original")
             return
@@ -69,7 +76,13 @@ struct ContentView: View {
             wordError(title: "Word not recognized", message: "You can't just make them up, you know!")
             return
         }
+        
+        withAnimation {
+            usedWords.insert(answr, at: 0)
+        }
+        
         newWord = ""
+        score += answr.count
     }
     
     
@@ -78,6 +91,7 @@ struct ContentView: View {
             if let startWords = try? String(contentsOf: startWordsURL) {
                 let allWords = startWords.components(separatedBy: "\n")
                 rootWord = allWords.randomElement() ?? "silkworm"
+                score = 0
                 return
             }
         }
@@ -102,7 +116,7 @@ struct ContentView: View {
     }
     
     private func isReal(word: String) -> Bool {
-       
+        if word.count < 4 || word == rootWord { return false }
         let checker = UITextChecker()
         let range = NSRange(location: 0, length: word.utf16.count)
         let misspelledRange = checker.rangeOfMisspelledWord(in: word, range: range, startingAt: 0, wrap: false, language: "en")
